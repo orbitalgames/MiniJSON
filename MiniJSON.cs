@@ -89,7 +89,7 @@ public static class MiniJSON
     }
 
     /// <summary>
-    /// Converts a IDictionary / IList object into a JSON string
+    /// Converts a IDictionary / IList object or a simple type (string, int, etc.) into a JSON string
     /// </summary>
     /// <param name="json">A Dictionary&lt;string, object&gt; / List&lt;object&gt;</param>
     /// <returns>A JSON encoded string, or null if object 'json' is not serializable</returns>
@@ -313,7 +313,7 @@ public static class MiniJSON
         return s.ToString();
     }
 
-    static double ParseNumber(char[] json, ref int index)
+    static object ParseNumber(char[] json, ref int index)
     {
         EatWhitespace(json, ref index);
 
@@ -323,7 +323,14 @@ public static class MiniJSON
 
         Array.Copy(json, index, numberCharArray, 0, charLength);
         index = lastIndex + 1;
-        return Double.Parse(new string(numberCharArray));
+
+		string numberStr = new string(numberCharArray);
+
+		if (numberStr.IndexOf('.') == -1) {
+			return long.Parse(numberStr);
+		}
+
+        return Double.Parse(numberStr);
     }
 
     static int GetLastIndexOfNumber(char[] json, int index)
