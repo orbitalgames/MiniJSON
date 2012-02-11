@@ -42,13 +42,14 @@ namespace MiniJSON
     //
     //  public class MiniJSONTest : MonoBehaviour {
     //      void Start () {
-    //          var jsonString = "{\"array\":[1.44,2,3]," +
-    //                          "\"object\":{\"key1\":\"value1\", \"key2\":256}," +
-    //                          "\"string\":\"The quick brown fox \\\"jumps\\\" over the lazy dog \"," +
-    //                          "\"int\":65536," +
-    //                          "\"float\":3.1415926," +
-    //                          "\"bool\":true," +
-    //                          "\"null\":null}";
+    //          var jsonString = "{ \"array\": [1.44,2,3], " +
+    //                          "\"object\": {\"key1\":\"value1\", \"key2\":256}, " +
+    //                          "\"string\": \"The quick brown fox \\\"jumps\\\" over the lazy dog \", " +
+    //                          "\"unicode\": \"\\u3041\", " +
+    //                          "\"int\": 65536, " +
+    //                          "\"float\": 3.1415926, " +
+    //                          "\"bool\": true, " +
+    //                          "\"null\": null }";
     //
     //          var dict = (Dictionary<string,object>) Json.Deserialize(jsonString);
     //
@@ -57,6 +58,7 @@ namespace MiniJSON
     //          Debug.Log("dict['string']: " + (string) dict["string"]);
     //          Debug.Log("dict['float']: " + (double) dict["float"]); // floats come out as doubles
     //          Debug.Log("dict['int']: " + (long) dict["int"]); // ints come out as longs
+    //          Debug.Log("dict['unicode']: " + (string) dict["unicode"]);
     //
     //          var str = Json.Serialize(dict);
     //
@@ -206,10 +208,10 @@ namespace MiniJSON
                         complete = true;
                         break;
                     } else if (c == '\\') {
-
                         if (index == json.Length) {
                             break;
                         }
+
                         c = json[index++];
 
                         if (c == '"') {
@@ -229,19 +231,9 @@ namespace MiniJSON
                         } else if (c == 't') {
                             s.Append('\t');
                         } else if (c == 'u') {
-                            int remainingLength = json.Length - index;
-                            if (remainingLength >= 4) {
-                                char[] unicodeCharArray = new char[4];
-                                Array.Copy(json, index, unicodeCharArray, 0, 4);
+                            var hex = NextWord();
 
-                                // Drop in the HTML markup for the unicode character
-                                s.AppendFormat(string.Format("&#x{0};", unicodeCharArray));
-
-                                // skip 4 chars
-                                index += 4;
-                            } else {
-                                break;
-                            }
+                            s.Append((char) Convert.ToInt32(hex, 16));
                         }
                     } else {
                         s.Append(c);
