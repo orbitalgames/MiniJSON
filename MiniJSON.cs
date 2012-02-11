@@ -119,7 +119,6 @@ namespace MiniJSON
                 TOKEN token;
 
                 // {
-
                 while (true) {
                     token = NextToken();
                     if (token == TOKEN.NONE) {
@@ -270,7 +269,7 @@ namespace MiniJSON
                 while (" \t\n\r".IndexOf(json[index]) != -1) {
                     index++;
 
-                    if (index >= json.Length)
+                    if (index == json.Length)
                         break;
                 }
             }
