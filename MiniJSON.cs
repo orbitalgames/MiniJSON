@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011 Calvin Rien
+ * Copyright (c) 2012 Calvin Rien
  * 
  * Based on the JSON parser by Patrick van Bergen 
  * http://techblog.procurios.nl/k/618/news/view/14605/14863/How-do-I-write-my-own-parser-for-JSON.html
@@ -197,7 +197,7 @@ namespace MiniJSON
                 char c;
 
                 bool complete = false;
-                while (!complete) {
+                while (true) {
 
                     if (index == json.Length) {
                         break;
@@ -381,9 +381,7 @@ namespace MiniJSON
                     SerializeString(e.ToString());
                     builder.Append(':');
 
-                    if (!SerializeValue(obj[e])) {
-                        return;
-                    }
+                    SerializeValue(obj[e]);
             
                     first = false;
                 }
@@ -401,17 +399,15 @@ namespace MiniJSON
                         builder.Append(',');
                     }
 
-                    if (!SerializeValue(obj)) {
-                        return;
-                    }
+                    SerializeValue(obj);
 
                     first = false;
                 }
 
                 builder.Append(']');
             }
-
-            bool SerializeValue(object value) {
+                        
+            void SerializeValue(object value) {
                 if (value == null) {
                     builder.Append("null");
                 } else if (value is IDictionary) {
@@ -420,16 +416,15 @@ namespace MiniJSON
                     SerializeArray((IList)value);
                 } else if (value is string) {
                     SerializeString((string)value);
-                } else if (value is Char) {         
-                    SerializeString(Convert.ToString((char)value));
+                } else if (value is Char) { 
+                    SerializeString(((char)value).ToString());
                 } else if (value is bool) {
                     builder.Append((bool)value ? "true" : "false");
-                } else if (value.GetType().IsPrimitive) {
-                    builder.Append((Convert.ToDouble(value)).ToString());
+                } else if (value is object) {
+                    SerializeString(value.ToString());
                 } else {
-                    return false;
+                    builder.Append(value.ToString());
                 }
-                return true;
             }
 
             void SerializeString(string aString) {
