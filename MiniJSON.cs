@@ -29,8 +29,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Text;
 using System.IO;
+using System.Text;
 
 namespace MiniJSON
 {
@@ -119,16 +119,21 @@ namespace MiniJSON
                 Dictionary<string, object> table = new Dictionary<string, object>();
                 TOKEN token;
 
+				// ditch opening brace
+				json.Read();
+
                 // {
                 while (true) {
                     token = NextToken();
-                    if (token == TOKEN.NONE) {
-                        return null;
-                    } else if (token == TOKEN.COMMA) {
-                        continue;
-                    } else if (token == TOKEN.CURLY_CLOSE) {
-                        return table;
-                    } else {
+
+					switch (token) {
+					case TOKEN.NONE:
+						return null;
+					case TOKEN.COMMA:
+						continue;
+					case TOKEN.CURLY_CLOSE:
+						return table;
+					default:
                         // name
                         string name = ParseString();
                         if (name == null) {
@@ -140,17 +145,23 @@ namespace MiniJSON
                         if (token != TOKEN.COLON) {
                             return null;
                         }
+						// ditch the colon
+						json.Read();
 
                         // value
                         table[name] = ParseValue();
-                    }
+						break;
+					}
                 }
             }
 
             List<object> ParseArray() {
                 List<object> array = new List<object>();
                 TOKEN token;
-        
+
+				// ditch opening bracket
+				json.Read();
+
                 // [
                 while (true) {
                     token = NextToken();
@@ -194,6 +205,9 @@ namespace MiniJSON
             string ParseString() {
                 StringBuilder s = new StringBuilder();
                 char c;
+
+				// ditch opening quote
+				json.Read();
 
                 bool complete = false;
                 while (true) {
@@ -296,13 +310,11 @@ namespace MiniJSON
                 char c = PeekChar();
                 switch (c) {
                 case '{':
-					json.Read();
                     return TOKEN.CURLY_OPEN;
                 case '}':
 					json.Read();
                     return TOKEN.CURLY_CLOSE;
                 case '[':
-					json.Read();
                     return TOKEN.SQUARED_OPEN;
                 case ']':
 					json.Read();
@@ -311,10 +323,8 @@ namespace MiniJSON
 					json.Read();
                     return TOKEN.COMMA;
                 case '"':
-					json.Read();
                     return TOKEN.STRING;
                 case ':':
-					json.Read();
                     return TOKEN.COLON;
                 case '0':
                 case '1':
