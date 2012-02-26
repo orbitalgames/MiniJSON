@@ -30,6 +30,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
+using System.IO;
 
 namespace MiniJSON
 {
@@ -89,9 +90,8 @@ namespace MiniJSON
         }
         
         class Parser {
-            char[] json;
-            int index;
-            
+            StringReader json;
+
             enum TOKEN {
                 NONE, 
                 CURLY_OPEN,
@@ -107,9 +107,8 @@ namespace MiniJSON
                 NULL
             };          
             
-            public Parser(string json) {
-                this.json = json.ToCharArray();
-                this.index = 0;
+            public Parser(string jsonData) {
+                this.json = new StringReader(jsonData);
             }
             
             public object Parse() {
@@ -199,20 +198,20 @@ namespace MiniJSON
                 bool complete = false;
                 while (true) {
 
-                    if (index == json.Length) {
+                    if (json.Peek() == -1) {
                         break;
                     }
 
-                    c = json[index++];
+                    c = ReadChar();
                     if (c == '"') {
                         complete = true;
                         break;
                     } else if (c == '\\') {
-                        if (index == json.Length) {
+                        if (json.Peek() == -1) {
                             break;
                         }
 
-                        c = json[index++];
+                        c = ReadChar();
 
                         if (c == '"') {
                             s.Append('"');
@@ -258,29 +257,29 @@ namespace MiniJSON
             }
 
             void EatWhitespace() {
-                while (" \t\n\r".IndexOf(json[index]) != -1) {
-                    index++;
+                while (" \t\n\r".IndexOf(PeekChar()) != -1) {
+                    json.Read();
 
-                    if (index == json.Length)
+                    if (json.Peek() == -1)
                         break;
                 }
             }
 
-            TOKEN Peek() {
-                var peek = NextToken();
-                index--;
+			char PeekChar() {
+				return Convert.ToChar(json.Peek());
+			}
 
-                return peek;
-            }
+			char ReadChar() {
+				return Convert.ToChar(json.Read());
+			}
 
             string NextWord() {
                 StringBuilder word = new StringBuilder();
 
-                while (" \t\n\r{}[],:\"".IndexOf(json[index]) == -1) {
-                    word.Append(json[index]);
-                    index++;
+                while (" \t\n\r{}[],:\"".IndexOf(PeekChar()) == -1) {
+                    word.Append(ReadChar());
 
-                    if (index == json.Length)
+                    if (json.Peek() == -1)
                         break;
                 }
 
@@ -290,25 +289,33 @@ namespace MiniJSON
             TOKEN NextToken() {
                 EatWhitespace();
 
-                if (index == json.Length) {
+                if (json.Peek() == -1) {
                     return TOKEN.NONE;
                 }
         
-                char c = json[index];
-                index++;
+                char c = PeekChar();
                 switch (c) {
                 case '{':
+					json.Read();
                     return TOKEN.CURLY_OPEN;
                 case '}':
+					json.Read();
                     return TOKEN.CURLY_CLOSE;
                 case '[':
+					json.Read();
                     return TOKEN.SQUARED_OPEN;
                 case ']':
+					json.Read();
                     return TOKEN.SQUARED_CLOSE;
                 case ',':
+					json.Read();
                     return TOKEN.COMMA;
                 case '"':
+					json.Read();
                     return TOKEN.STRING;
+                case ':':
+					json.Read();
+                    return TOKEN.COLON;
                 case '0':
                 case '1':
                 case '2':
@@ -320,12 +327,8 @@ namespace MiniJSON
                 case '8':
                 case '9':
                 case '-':
-                    index--;
                     return TOKEN.NUMBER;
-                case ':':
-                    return TOKEN.COLON;
                 }
-                index--;
 
                 string word = NextWord();
 
