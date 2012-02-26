@@ -119,21 +119,21 @@ namespace MiniJSON
                 Dictionary<string, object> table = new Dictionary<string, object>();
                 TOKEN token;
 
-				// ditch opening brace
-				json.Read();
+                // ditch opening brace
+                json.Read();
 
                 // {
                 while (true) {
                     token = NextToken();
 
-					switch (token) {
-					case TOKEN.NONE:
-						return null;
-					case TOKEN.COMMA:
-						continue;
-					case TOKEN.CURLY_CLOSE:
-						return table;
-					default:
+                    switch (token) {
+                    case TOKEN.NONE:
+                        return null;
+                    case TOKEN.COMMA:
+                        continue;
+                    case TOKEN.CURLY_CLOSE:
+                        return table;
+                    default:
                         // name
                         string name = ParseString();
                         if (name == null) {
@@ -145,13 +145,13 @@ namespace MiniJSON
                         if (token != TOKEN.COLON) {
                             return null;
                         }
-						// ditch the colon
-						json.Read();
+                        // ditch the colon
+                        json.Read();
 
                         // value
                         table[name] = ParseValue();
-						break;
-					}
+                        break;
+                    }
                 }
             }
 
@@ -159,8 +159,8 @@ namespace MiniJSON
                 List<object> array = new List<object>();
                 TOKEN token;
 
-				// ditch opening bracket
-				json.Read();
+                // ditch opening bracket
+                json.Read();
 
                 // [
                 while (true) {
@@ -206,8 +206,8 @@ namespace MiniJSON
                 StringBuilder s = new StringBuilder();
                 char c;
 
-				// ditch opening quote
-				json.Read();
+                // ditch opening quote
+                json.Read();
 
                 bool complete = false;
                 while (true) {
@@ -246,9 +246,9 @@ namespace MiniJSON
                         } else if (c == 'u') {
                             var hex = new StringBuilder();
 
-							for (int i=0; i< 4;i++) {
-								hex.Append(ReadChar());
-							}
+                            for (int i=0; i< 4;i++) {
+                                hex.Append(ReadChar());
+                            }
 
                             s.Append((char) Convert.ToInt32(hex.ToString(), 16));
                         }
@@ -283,13 +283,13 @@ namespace MiniJSON
                 }
             }
 
-			char PeekChar() {
-				return Convert.ToChar(json.Peek());
-			}
+            char PeekChar() {
+                return Convert.ToChar(json.Peek());
+            }
 
-			char ReadChar() {
-				return Convert.ToChar(json.Read());
-			}
+            char ReadChar() {
+                return Convert.ToChar(json.Read());
+            }
 
             string NextWord() {
                 StringBuilder word = new StringBuilder();
@@ -316,15 +316,15 @@ namespace MiniJSON
                 case '{':
                     return TOKEN.CURLY_OPEN;
                 case '}':
-					json.Read();
+                    json.Read();
                     return TOKEN.CURLY_CLOSE;
                 case '[':
                     return TOKEN.SQUARED_OPEN;
                 case ']':
-					json.Read();
+                    json.Read();
                     return TOKEN.SQUARED_CLOSE;
                 case ',':
-					json.Read();
+                    json.Read();
                     return TOKEN.COMMA;
                 case '"':
                     return TOKEN.STRING;
@@ -399,7 +399,7 @@ namespace MiniJSON
                 } else if (value is bool) {
                     builder.Append((bool)value ? "true" : "false");
                 } else {
-					SerializeOther(value);
+                    SerializeOther(value);
                 }
             }
             
@@ -474,24 +474,24 @@ namespace MiniJSON
                 builder.Append('\"');
             }
 
-			void SerializeOther(object value) {
-			    if (value is float
+            void SerializeOther(object value) {
+                if (value is float
                     || value is int
                     || value is uint
                     || value is long
                     || value is double
                     || value is sbyte
-					|| value is byte
-					|| value is short
-					|| value is ushort
-					|| value is ulong
-					|| value is decimal) {
-					builder.Append(value.ToString());
-				}
-				else {
-					SerializeString(value.ToString());
-				}
-			}
+                    || value is byte
+                    || value is short
+                    || value is ushort
+                    || value is ulong
+                    || value is decimal) {
+                    builder.Append(value.ToString());
+                }
+                else {
+                    SerializeString(value.ToString());
+                }
+            }
         }
     }
 }
