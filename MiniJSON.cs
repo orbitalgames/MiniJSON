@@ -46,13 +46,13 @@ namespace MiniJSON
     //          var jsonString = "{ \"array\": [1.44,2,3], " +
     //                          "\"object\": {\"key1\":\"value1\", \"key2\":256}, " +
     //                          "\"string\": \"The quick brown fox \\\"jumps\\\" over the lazy dog \", " +
-    //                          "\"unicode\": \"\\u3041\", " +
+    //                          "\"unicode\": \"\\u3041 Men\u00fa sesi\u00f3n\", " +
     //                          "\"int\": 65536, " +
     //                          "\"float\": 3.1415926, " +
     //                          "\"bool\": true, " +
     //                          "\"null\": null }";
     //
-    //          var dict = (Dictionary<string,object>) Json.Deserialize(jsonString);
+    //          var dict = Json.Deserialize(jsonString) as Dictionary<string,object>;
     //
     //          Debug.Log("deserialized: " + dict.GetType());
     //          Debug.Log("dict['array'][0]: " + ((List<object>) dict["array"])[0]);
@@ -244,9 +244,13 @@ namespace MiniJSON
                         } else if (c == 't') {
                             s.Append('\t');
                         } else if (c == 'u') {
-                            var hex = NextWord();
+                            var hex = new StringBuilder();
 
-                            s.Append((char) Convert.ToInt32(hex, 16));
+							for (int i=0; i< 4;i++) {
+								hex.Append(ReadChar());
+							}
+
+                            s.Append((char) Convert.ToInt32(hex.ToString(), 16));
                         }
                     } else {
                         s.Append(c);
@@ -380,6 +384,24 @@ namespace MiniJSON
                 
                 return builder.ToString();
             }
+
+            void SerializeValue(object value) {
+                if (value == null) {
+                    builder.Append("null");
+                } else if (value is IDictionary) {
+                    SerializeObject((IDictionary)value);
+                } else if (value is IList) {
+                    SerializeArray((IList)value);
+                } else if (value is string) {
+                    SerializeString((string)value);
+                } else if (value is Char) { 
+                    SerializeString(((char)value).ToString());
+                } else if (value is bool) {
+                    builder.Append((bool)value ? "true" : "false");
+                } else {
+					SerializeOther(value);
+                }
+            }
             
             void SerializeObject(IDictionary obj) {
                 bool first = true;
@@ -419,31 +441,11 @@ namespace MiniJSON
 
                 builder.Append(']');
             }
-                        
-            void SerializeValue(object value) {
-                if (value == null) {
-                    builder.Append("null");
-                } else if (value is IDictionary) {
-                    SerializeObject((IDictionary)value);
-                } else if (value is IList) {
-                    SerializeArray((IList)value);
-                } else if (value is string) {
-                    SerializeString((string)value);
-                } else if (value is Char) { 
-                    SerializeString(((char)value).ToString());
-                } else if (value is bool) {
-                    builder.Append((bool)value ? "true" : "false");
-                } else if (value is object) {
-                    SerializeString(value.ToString());
-                } else {
-                    builder.Append(value.ToString());
-                }
-            }
 
-            void SerializeString(string aString) {
+            void SerializeString(string str) {
                 builder.Append('\"');
 
-                char[] charArray = aString.ToCharArray();
+                char[] charArray = str.ToCharArray();
                 foreach (var c in charArray) {
                     if (c == '"') {
                         builder.Append("\\\"");
@@ -471,6 +473,25 @@ namespace MiniJSON
 
                 builder.Append('\"');
             }
+
+			void SerializeOther(object value) {
+			    if (value is float
+                    || value is int
+                    || value is uint
+                    || value is long
+                    || value is double
+                    || value is sbyte
+					|| value is byte
+					|| value is short
+					|| value is ushort
+					|| value is ulong
+					|| value is decimal) {
+					builder.Append(value.ToString());
+				}
+				else {
+					SerializeString(value.ToString());
+				}
+			}
         }
     }
 }
