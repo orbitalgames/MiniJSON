@@ -85,12 +85,12 @@ namespace MiniJSON {
                 return null;
             }
 
-            var parser = new Parser(json);
-            return parser.Parse();
+            return new Parser(json).Parse();
         }
 
         class Parser {
-            StringReader json;
+            const string WHITE_SPACE = " \t\n\r";
+            const string WORD_BREAK = " \t\n\r{}[],:\"";
 
             enum TOKEN {
                 NONE,
@@ -106,6 +106,8 @@ namespace MiniJSON {
                 FALSE,
                 NULL
             };
+
+            StringReader json;
 
             public Parser(string jsonData) {
                 this.json = new StringReader(jsonData);
@@ -279,7 +281,7 @@ namespace MiniJSON {
             }
 
             void EatWhitespace() {
-                while (" \t\n\r".IndexOf(PeekChar) != -1) {
+                while (WHITE_SPACE.IndexOf(PeekChar) != -1) {
                     json.Read();
 
                     if (json.Peek() == -1) {
@@ -304,7 +306,7 @@ namespace MiniJSON {
                 get {
                     StringBuilder word = new StringBuilder();
 
-                    while (" \t\n\r{}[],:\"".IndexOf(PeekChar) == -1) {
+                    while (WORD_BREAK.IndexOf(PeekChar) == -1) {
                         word.Append(NextChar);
 
                         if (json.Peek() == -1) {
@@ -379,9 +381,7 @@ namespace MiniJSON {
         /// <param name="json">A Dictionary&lt;string, object&gt; / List&lt;object&gt;</param>
         /// <returns>A JSON encoded string, or null if object 'json' is not serializable</returns>
         public static string Serialize(object obj) {
-            var serializer = new Serializer(obj);
-
-            return serializer.Serialize();
+            return new Serializer(obj).Serialize();
         }
 
         class Serializer {
