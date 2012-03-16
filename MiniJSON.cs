@@ -73,7 +73,7 @@ namespace MiniJSON {
     /// JSON uses Arrays and Objects. These correspond here to the datatypes IList and IDictionary.
     /// All numbers are parsed to doubles.
     /// </summary>
-    public class Json {
+    public static class Json {
         /// <summary>
         /// Parses the string json into a value
         /// </summary>
@@ -85,10 +85,10 @@ namespace MiniJSON {
                 return null;
             }
 
-            return new Parser(json).Parse();
+            return Parser.Parse(json);
         }
 
-        class Parser {
+        sealed class Parser : IDisposable {
             const string WHITE_SPACE = " \t\n\r";
             const string WORD_BREAK = " \t\n\r{}[],:\"";
 
@@ -109,12 +109,19 @@ namespace MiniJSON {
 
             StringReader json;
 
-            public Parser(string jsonData) {
-                this.json = new StringReader(jsonData);
+            Parser(string jsonString) {
+                json = new StringReader(jsonString);
             }
 
-            public object Parse() {
-                return ParseValue();
+            public static object Parse(string jsonString) {
+                using (var instance = new Parser(jsonString)) {
+                    return instance.ParseValue();
+                }
+            }
+
+            public void Dispose() {
+                json.Dispose();
+                json = null;
             }
 
             Dictionary<string, object> ParseObject() {
@@ -274,10 +281,14 @@ namespace MiniJSON {
                 string number = NextWord;
 
                 if (number.IndexOf('.') == -1) {
-                    return Int64.Parse(number);
+                    long parsedInt;
+                    Int64.TryParse(number, out parsedInt);
+                    return parsedInt;
                 }
 
-                return Double.Parse(number);
+                double parsedDouble;
+                Double.TryParse(number, out parsedDouble);
+                return parsedDouble;
             }
 
             void EatWhitespace() {
@@ -381,38 +392,48 @@ namespace MiniJSON {
         /// <param name="json">A Dictionary&lt;string, object&gt; / List&lt;object&gt;</param>
         /// <returns>A JSON encoded string, or null if object 'json' is not serializable</returns>
         public static string Serialize(object obj) {
-            return new Serializer(obj).Serialize();
+            return Serializer.Serialize(obj);
         }
 
-        class Serializer {
+        sealed class Serializer {
             StringBuilder builder;
-            object obj;
 
-            public Serializer(object obj) {
-                this.obj = obj;
+            Serializer() {
                 builder = new StringBuilder();
             }
 
-            public string Serialize() {
-                SerializeValue(obj);
+            public static string Serialize(object obj) {
+                var instance = new Serializer();
 
-                return builder.ToString();
+                instance.SerializeValue(obj);
+
+                return instance.builder.ToString();
             }
 
             void SerializeValue(object value) {
+                IList asList;
+                IDictionary asDict;
+                string asStr;
+
                 if (value == null) {
                     builder.Append("null");
-                } else if (value is IDictionary) {
-                    SerializeObject((IDictionary)value);
-                } else if (value is IList) {
-                    SerializeArray((IList)value);
-                } else if (value is string) {
-                    SerializeString((string)value);
-                } else if (value is Char) { 
-                    SerializeString(((char)value).ToString());
-                } else if (value is bool) {
-                    builder.Append((bool)value ? "true" : "false");
-                } else {
+                }
+                else if ((asStr = value as string) != null) {
+                    SerializeString(asStr);
+                }
+                else if (value is bool) {
+                    builder.Append(value.ToString().ToLower());
+                }
+                else if ((asList = value as IList) != null) {
+                    SerializeArray(asList);
+                }
+                else if ((asDict = value as IDictionary) != null) {
+                    SerializeObject(asDict);
+                }
+                else if (value is char) {
+                    SerializeString(value.ToString());
+                }
+                else {
                     SerializeOther(value);
                 }
             }
