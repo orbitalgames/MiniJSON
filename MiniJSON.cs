@@ -169,7 +169,9 @@ namespace MiniJSON {
                 // [
                 var parsing = true;
                 while (parsing) {
-                    switch (NextToken) {
+                    TOKEN nextToken = NextToken;
+
+                    switch (nextToken) {
                     case TOKEN.NONE:
                         return null;
                     case TOKEN.COMMA:
@@ -178,7 +180,7 @@ namespace MiniJSON {
                         parsing = false;
                         break;
                     default:
-                        object value = ParseValue();
+                        object value = ParseByToken(nextToken);
 
                         array.Add(value);
                         break;
@@ -189,7 +191,12 @@ namespace MiniJSON {
             }
 
             object ParseValue() {
-                switch (NextToken) {
+                TOKEN nextToken = NextToken;
+                return ParseByToken(nextToken);
+            }
+
+            object ParseByToken(TOKEN token) {
+                switch (token) {
                 case TOKEN.STRING:
                     return ParseString();
                 case TOKEN.NUMBER:
