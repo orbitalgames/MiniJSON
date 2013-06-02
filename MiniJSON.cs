@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012 Calvin Rien
+ * Copyright (c) 2013 Calvin Rien
  *
  * Based on the JSON parser by Patrick van Bergen
  * http://techblog.procurios.nl/k/618/news/view/14605/14863/How-do-I-write-my-own-parser-for-JSON.html
@@ -89,8 +89,11 @@ namespace MiniJSON {
         }
 
         sealed class Parser : IDisposable {
-            const string WHITE_SPACE = " \t\n\r";
-            const string WORD_BREAK = " \t\n\r{}[],:\"";
+            const string WORD_BREAK = "{}[],:\"";
+
+            public static bool IsWordBreak(char c) {
+                return Char.IsWhiteSpace(c) || WORD_BREAK.IndexOf(c) != -1;
+            }
 
             enum TOKEN {
                 NONE,
@@ -265,13 +268,13 @@ namespace MiniJSON {
                             s.Append('\t');
                             break;
                         case 'u':
-                            var hex = new StringBuilder();
+                            var hex = new char[4];
 
                             for (int i=0; i< 4; i++) {
-                                hex.Append(NextChar);
+                                hex[i] = NextChar;
                             }
 
-                            s.Append((char) Convert.ToInt32(hex.ToString(), 16));
+                            s.Append((char) Convert.ToInt32(new string(hex), 16));
                             break;
                         }
                         break;
@@ -299,7 +302,7 @@ namespace MiniJSON {
             }
 
             void EatWhitespace() {
-                while (WHITE_SPACE.IndexOf(PeekChar) != -1) {
+                while (Char.IsWhiteSpace(PeekChar)) {
                     json.Read();
 
                     if (json.Peek() == -1) {
@@ -324,7 +327,7 @@ namespace MiniJSON {
                 get {
                     StringBuilder word = new StringBuilder();
 
-                    while (WORD_BREAK.IndexOf(PeekChar) == -1) {
+                    while (!IsWordBreak(PeekChar)) {
                         word.Append(NextChar);
 
                         if (json.Peek() == -1) {
@@ -344,8 +347,7 @@ namespace MiniJSON {
                         return TOKEN.NONE;
                     }
 
-                    char c = PeekChar;
-                    switch (c) {
+                    switch (PeekChar) {
                     case '{':
                         return TOKEN.CURLY_OPEN;
                     case '}':
@@ -377,9 +379,7 @@ namespace MiniJSON {
                         return TOKEN.NUMBER;
                     }
 
-                    string word = NextWord;
-
-                    switch (word) {
+                    switch (NextWord) {
                     case "false":
                         return TOKEN.FALSE;
                     case "true":
@@ -424,23 +424,17 @@ namespace MiniJSON {
 
                 if (value == null) {
                     builder.Append("null");
-                }
-                else if ((asStr = value as string) != null) {
+                } else if ((asStr = value as string) != null) {
                     SerializeString(asStr);
-                }
-                else if (value is bool) {
-                    builder.Append(value.ToString().ToLower());
-                }
-                else if ((asList = value as IList) != null) {
+                } else if (value is bool) {
+                    builder.Append((bool) value ? "true" : "false");
+                } else if ((asList = value as IList) != null) {
                     SerializeArray(asList);
-                }
-                else if ((asDict = value as IDictionary) != null) {
+                } else if ((asDict = value as IDictionary) != null) {
                     SerializeObject(asDict);
-                }
-                else if (value is char) {
-                    SerializeString(value.ToString());
-                }
-                else {
+                } else if (value is char) {
+                    SerializeString(new string((char) value, 1));
+                } else {
                     SerializeOther(value);
                 }
             }
@@ -515,9 +509,9 @@ namespace MiniJSON {
                         int codepoint = Convert.ToInt32(c);
                         if ((codepoint >= 32) && (codepoint <= 126)) {
                             builder.Append(c);
-                        }
-                        else {
-                            builder.Append("\\u" + Convert.ToString(codepoint, 16).PadLeft(4, '0'));
+                        } else {
+                            builder.Append("\\u");
+                            builder.Append(codepoint.ToString("x4"));
                         }
                         break;
                     }
@@ -527,20 +521,24 @@ namespace MiniJSON {
             }
 
             void SerializeOther(object value) {
-                if (value is float
-                    || value is int
+                // NOTE: decimals lose precision during serialization.
+                // They always have, I'm just letting you know.
+                // Previously floats and doubles lost precision too.
+                if (value is float) {
+                    builder.Append(((float) value).ToString("R"));
+                } else if (value is int
                     || value is uint
                     || value is long
-                    || value is double
                     || value is sbyte
                     || value is byte
                     || value is short
                     || value is ushort
-                    || value is ulong
+                    || value is ulong) {
+                    builder.Append(value);
+                } else if (value is double
                     || value is decimal) {
-                    builder.Append(value.ToString());
-                }
-                else {
+                    builder.Append(Convert.ToDouble(value).ToString("R"));
+                } else {
                     SerializeString(value.ToString());
                 }
             }
